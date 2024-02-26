@@ -6337,6 +6337,22 @@ public class SqlOperatorTest {
         "INTEGER NOT NULL ARRAY NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_append(array[map[1, 'a']], map[2, 'b'])", "[{1=a}, {2=b}]",
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array[1], cast(2 as tinyint))", "[1, 2]",
+        "INTEGER NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array[cast(1 as double)], cast(2 as float))", "[1.0, 2.0]",
+        "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(1), cast(2 as float))", "[1.0, 2.0]",
+        "FLOAT NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(1), cast(2 as double))", "[1.0, 2.0]",
+        "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(1), cast(2 as bigint))", "[1, 2]",
+        "BIGINT NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(1, 2), cast(3 as double))", "[1.0, 2.0, 3.0]",
+        "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(1, 2), cast(3 as float))", "[1.0, 2.0, 3.0]",
+        "FLOAT NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(1, 2), cast(3 as bigint))", "[1, 2, 3]",
+        "BIGINT NOT NULL ARRAY NOT NULL");
     f.checkNull("array_append(cast(null as integer array), 1)");
     f.checkType("array_append(cast(null as integer array), 1)", "INTEGER NOT NULL ARRAY");
     f.checkFails("^array_append(array[1, 2], true)^",
@@ -6572,12 +6588,28 @@ public class SqlOperatorTest {
         "NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array(), null)", "[null]",
         "UNKNOWN ARRAY NOT NULL");
-    f.checkScalar("array_append(array(), 1)", "[1]",
+    f.checkScalar("array_prepend(array(), 1)", "[1]",
+        "INTEGER NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[1], cast(2 as tinyint))", "[2, 1]",
         "INTEGER NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array[array[1, 2]], array[3, 4])", "[[3, 4], [1, 2]]",
         "INTEGER NOT NULL ARRAY NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array[map[1, 'a']], map[2, 'b'])", "[{2=b}, {1=a}]",
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[1], cast(3 as float))", "[3.0, 1.0]",
+        "FLOAT NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[1], cast(3 as bigint))", "[3, 1]",
+        "BIGINT NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[2], cast(3 as double))", "[3.0, 2.0]",
+        "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[1, 2], cast(3 as float))", "[3.0, 1.0, 2.0]",
+        "FLOAT NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[2, 1], cast(3 as double))", "[3.0, 2.0, 1.0]",
+        "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[1, 2], cast(3 as tinyint))", "[3, 1, 2]",
+        "INTEGER NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array[1, 2], cast(3 as bigint))", "[3, 1, 2]",
+        "BIGINT NOT NULL ARRAY NOT NULL");
     f.checkNull("array_prepend(cast(null as integer array), 1)");
     f.checkType("array_prepend(cast(null as integer array), 1)", "INTEGER NOT NULL ARRAY");
     f.checkFails("^array_prepend(array[1, 2], true)^",

@@ -1187,6 +1187,9 @@ public abstract class SqlLibraryOperators {
     if (elementType.isNullable()) {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
+    SqlValidatorUtil.
+        adjustTypeForArrayAppendPrependConstructor(componentType, elementType, opBinding);
+
     requireNonNull(type, "inferred array element type");
     return SqlTypeUtil.createArrayType(opBinding.getTypeFactory(), type, arrayType.isNullable());
   }
