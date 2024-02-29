@@ -1334,24 +1334,38 @@ public class SqlValidatorUtil {
    * @param componentType derived array component type
    * @param opBinding description of call
    */
-  public static void adjustTypeForArrayAppendPrependConstructor(
+  public static void adjustTypeForArrayFunctionConstructor(
       RelDataType componentType, RelDataType elementType, SqlOperatorBinding opBinding) {
     if (opBinding instanceof SqlCallBinding) {
       requireNonNull(componentType, "array component type");
-      switch (elementType.getSqlTypeName().getName()) {
-      case "DOUBLE":
-      case "FLOAT":
-      case "BIGINT":
-        adjustTypeForMultisetConstructor3(
-            elementType, elementType, (SqlCallBinding) opBinding);
-        break;
-      default:
-        if (!componentType.getSqlTypeName().getName().equals("UNKNOWN")) {
-          adjustTypeForMultisetConstructor2(
-              componentType, componentType, (SqlCallBinding) opBinding);
-        }
-        break;
+      caseTypeForArrayFunctionConstructor(componentType, elementType, opBinding);
+    }
+  }
+
+  /**
+   * Implicit conversion of data types in array_append and array_prepend based on the types
+   * of componentType and elementType.
+   *
+   * @param componentType derived array component type
+   * @param elementType derived array elementType type
+   * @param opBinding description of call
+   */
+  public static void caseTypeForArrayFunctionConstructor(
+      RelDataType componentType, RelDataType elementType, SqlOperatorBinding opBinding) {
+    switch (elementType.getSqlTypeName().getName()) {
+    case "DOUBLE":
+    case "FLOAT":
+    case "BIGINT":
+    case "DECIMAL":
+      adjustTypeForMultisetConstructor3(
+          elementType, elementType, (SqlCallBinding) opBinding);
+      break;
+    default:
+      if (!componentType.getSqlTypeName().getName().equals("UNKNOWN")) {
+        adjustTypeForMultisetConstructor2(
+            componentType, componentType, (SqlCallBinding) opBinding);
       }
+      break;
     }
   }
 
@@ -1412,7 +1426,7 @@ public class SqlValidatorUtil {
 
   /**
    * Adjusts the types for operands in a SqlCallBinding during the construction of a sql collection
-   * type such as Array, but cannot change the data type in the array.
+   * type such as array_append and array_prepend, but cannot change the data type in the array.
    *
    * @param evenType the {@link RelDataType} to which the operands at even positions should be cast
    * @param oddType the {@link RelDataType} to which the operands at odd positions should be cast
@@ -1436,6 +1450,14 @@ public class SqlValidatorUtil {
     }
   }
 
+  /**
+   * Adjusts the types for operands in a SqlCallBinding during the construction of a sql collection
+   * type such as array_append and array_prepend, but what changes is the data type in arraylist.
+   *
+   * @param evenType the {@link RelDataType} to which the operands at even positions should be cast
+   * @param oddType the {@link RelDataType} to which the operands at odd positions should be cast
+   * @param sqlCallBinding the {@link SqlCallBinding} containing the operands to be adjusted
+   */
   private static void adjustTypeForMultisetConstructor3(
       RelDataType evenType, RelDataType oddType, SqlCallBinding sqlCallBinding) {
     SqlCall call = sqlCallBinding.getCall();
