@@ -1187,8 +1187,10 @@ public abstract class SqlLibraryOperators {
     if (elementType.isNullable()) {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
-    SqlValidatorUtil.
-        adjustTypeForArrayFunctionConstructor(componentType, elementType, opBinding);
+    if (componentType != elementType) {
+      SqlValidatorUtil.
+          adjustTypeForArrayConstructor(type, opBinding);
+    }
 
     requireNonNull(type, "inferred array element type");
     return SqlTypeUtil.createArrayType(opBinding.getTypeFactory(), type, arrayType.isNullable());
@@ -1269,9 +1271,16 @@ public abstract class SqlLibraryOperators {
     // we don't need to do leastRestrictive on componentType and elementType,
     // because in operand checker we limit the elementType must equals array component type.
     // So we use componentType directly.
-    RelDataType type = componentType;
+    RelDataType type =
+        opBinding.getTypeFactory().leastRestrictive(
+            ImmutableList.of(componentType, elementType));
     if (elementType.isNullable()) {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
+    }
+
+    if (componentType != elementType) {
+      SqlValidatorUtil.
+          adjustTypeForArrayConstructor(type, opBinding);
     }
     requireNonNull(type, "inferred array element type");
     return SqlTypeUtil.createArrayType(opBinding.getTypeFactory(), type, arrayType.isNullable());

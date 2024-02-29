@@ -1328,48 +1328,6 @@ public class SqlValidatorUtil {
   }
 
   /**
-   * When the array_append and array_prepend element does not equal the array component type
-   * make explicit casting.
-   *
-   * @param componentType derived array component type
-   * @param opBinding description of call
-   */
-  public static void adjustTypeForArrayFunctionConstructor(
-      RelDataType componentType, RelDataType elementType, SqlOperatorBinding opBinding) {
-    if (opBinding instanceof SqlCallBinding) {
-      requireNonNull(componentType, "array component type");
-      caseTypeForArrayFunctionConstructor(componentType, elementType, opBinding);
-    }
-  }
-
-  /**
-   * Implicit conversion of data types in array_append and array_prepend based on the types
-   * of componentType and elementType.
-   *
-   * @param componentType derived array component type
-   * @param elementType derived array elementType type
-   * @param opBinding description of call
-   */
-  public static void caseTypeForArrayFunctionConstructor(
-      RelDataType componentType, RelDataType elementType, SqlOperatorBinding opBinding) {
-    switch (elementType.getSqlTypeName().getName()) {
-    case "DOUBLE":
-    case "FLOAT":
-    case "BIGINT":
-    case "DECIMAL":
-      adjustTypeForMultisetConstructor3(
-          elementType, elementType, (SqlCallBinding) opBinding);
-      break;
-    default:
-      if (!componentType.getSqlTypeName().getName().equals("UNKNOWN")) {
-        adjustTypeForMultisetConstructor2(
-            componentType, componentType, (SqlCallBinding) opBinding);
-      }
-      break;
-    }
-  }
-
-  /**
    * When the map key or value does not equal the map component key type or value type,
    * make explicit casting.
    *
@@ -1418,60 +1376,16 @@ public class SqlValidatorUtil {
       } else {
         elementType = oddType;
       }
-      if (!operandTypes.get(i).equalsSansFieldNames(elementType)) {
-        call.setOperand(i, castTo(operands.get(i), elementType));
+      if (call.getOperator().getName().equals("ARRAY_INSERT") && i == 1) {
+        continue;
       }
-    }
-  }
-
-  /**
-   * Adjusts the types for operands in a SqlCallBinding during the construction of a sql collection
-   * type such as array_append and array_prepend, but cannot change the data type in the array.
-   *
-   * @param evenType the {@link RelDataType} to which the operands at even positions should be cast
-   * @param oddType the {@link RelDataType} to which the operands at odd positions should be cast
-   * @param sqlCallBinding the {@link SqlCallBinding} containing the operands to be adjusted
-   */
-  private static void adjustTypeForMultisetConstructor2(
-      RelDataType evenType, RelDataType oddType, SqlCallBinding sqlCallBinding) {
-    SqlCall call = sqlCallBinding.getCall();
-    List<RelDataType> operandTypes = sqlCallBinding.collectOperandTypes();
-    List<SqlNode> operands = call.getOperandList();
-    RelDataType elementType;
-    for (int i = 0; i < operands.size(); i++) {
-      if (i % 2 == 0) {
-        elementType = evenType;
-      } else {
-        elementType = oddType;
-      }
-      if (!operandTypes.get(i).equalsSansFieldNames(elementType) && i != 0) {
-        call.setOperand(i, castTo(operands.get(i), elementType));
-      }
-    }
-  }
-
-  /**
-   * Adjusts the types for operands in a SqlCallBinding during the construction of a sql collection
-   * type such as array_append and array_prepend, but what changes is the data type in arraylist.
-   *
-   * @param evenType the {@link RelDataType} to which the operands at even positions should be cast
-   * @param oddType the {@link RelDataType} to which the operands at odd positions should be cast
-   * @param sqlCallBinding the {@link SqlCallBinding} containing the operands to be adjusted
-   */
-  private static void adjustTypeForMultisetConstructor3(
-      RelDataType evenType, RelDataType oddType, SqlCallBinding sqlCallBinding) {
-    SqlCall call = sqlCallBinding.getCall();
-    List<RelDataType> operandTypes = sqlCallBinding.collectOperandTypes();
-    List<SqlNode> operands = call.getOperandList();
-    RelDataType elementType;
-    for (int i = 0; i < operands.size(); i++) {
-      if (i % 2 == 0) {
-        elementType = evenType;
-      } else {
-        elementType = oddType;
-      }
-      if (!operandTypes.get(i).equalsSansFieldNames(elementType)) {
+      if (operandTypes.get(i).getSqlTypeName().getName().equals("ARRAY")
+          && !elementType.getSqlTypeName().getName().equals("ARRAY")) {
         call.setOperand(i, arrayToCast(operands.get(i), elementType));
+        continue;
+      }
+      if (!operandTypes.get(i).equalsSansFieldNames(elementType)) {
+        call.setOperand(i, castTo(operands.get(i), elementType));
       }
     }
   }

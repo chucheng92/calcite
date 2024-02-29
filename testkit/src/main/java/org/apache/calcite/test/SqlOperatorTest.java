@@ -6355,9 +6355,9 @@ public class SqlOperatorTest {
             + "<INTEGER ARRAY>, <NUMERIC>\\)", false);
 
     final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.SPARK);
-    f.checkScalar("array_append(array[1], cast(2 as tinyint))", "[1, 2]",
+    f.checkScalar("array_append(array(1), cast(2 as tinyint))", "[1, 2]",
         "INTEGER NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_append(array[cast(1 as double)], cast(2 as float))", "[1.0, 2.0]",
+    f.checkScalar("array_append(array(cast(1 as double)), cast(2 as float))", "[1.0, 2.0]",
         "DOUBLE NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_append(array(1), cast(2 as float))", "[1.0, 2.0]",
         "FLOAT NOT NULL ARRAY NOT NULL");
@@ -6381,6 +6381,14 @@ public class SqlOperatorTest {
         "DECIMAL(19, 0) NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_append(array(1), 10e6)", "[1.0, 1.0E7]",
         "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_append(array(), cast(null as double))", "[null]",
+        "DOUBLE ARRAY NOT NULL");
+    f.checkScalar("array_append(array(), cast(null as float))", "[null]",
+        "FLOAT ARRAY NOT NULL");
+    f.checkScalar("array_append(array(), cast(null as tinyint))", "[null]",
+        "TINYINT ARRAY NOT NULL");
+    f.checkScalar("array_append(array(), cast(null as bigint))", "[null]",
+        "BIGINT ARRAY NOT NULL");
   }
 
   /** Tests {@code ARRAY_COMPACT} function from Spark. */
@@ -6636,19 +6644,19 @@ public class SqlOperatorTest {
             + "<INTEGER ARRAY>, <NUMERIC>\\)", false);
 
     final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.SPARK);
-    f.checkScalar("array_prepend(array[1], cast(3 as float))", "[3.0, 1.0]",
+    f.checkScalar("array_prepend(array(1), cast(3 as float))", "[3.0, 1.0]",
         "FLOAT NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_prepend(array[1], cast(3 as bigint))", "[3, 1]",
+    f.checkScalar("array_prepend(array(1), cast(3 as bigint))", "[3, 1]",
         "BIGINT NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_prepend(array[2], cast(3 as double))", "[3.0, 2.0]",
+    f.checkScalar("array_prepend(array(2), cast(3 as double))", "[3.0, 2.0]",
         "DOUBLE NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_prepend(array[1, 2], cast(3 as float))", "[3.0, 1.0, 2.0]",
+    f.checkScalar("array_prepend(array(1, 2), cast(3 as float))", "[3.0, 1.0, 2.0]",
         "FLOAT NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_prepend(array[2, 1], cast(3 as double))", "[3.0, 2.0, 1.0]",
+    f.checkScalar("array_prepend(array(2, 1), cast(3 as double))", "[3.0, 2.0, 1.0]",
         "DOUBLE NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_prepend(array[1, 2], cast(3 as tinyint))", "[3, 1, 2]",
+    f.checkScalar("array_prepend(array(1, 2), cast(3 as tinyint))", "[3, 1, 2]",
         "INTEGER NOT NULL ARRAY NOT NULL");
-    f.checkScalar("array_prepend(array[1, 2], cast(3 as bigint))", "[3, 1, 2]",
+    f.checkScalar("array_prepend(array(1, 2), cast(3 as bigint))", "[3, 1, 2]",
         "BIGINT NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array(1, 2), cast(null as double))", "[null, 1.0, 2.0]",
         "DOUBLE ARRAY NOT NULL");
@@ -6660,9 +6668,15 @@ public class SqlOperatorTest {
         "DECIMAL(19, 0) NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array(1), 10e6)", "[1.0E7, 1.0]",
         "DOUBLE NOT NULL ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array(), cast(null as double))", "[null]",
+        "DOUBLE ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array(), cast(null as float))", "[null]",
+        "FLOAT ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array(), cast(null as tinyint))", "[null]",
+        "TINYINT ARRAY NOT NULL");
+    f.checkScalar("array_prepend(array(), cast(null as bigint))", "[null]",
+        "BIGINT ARRAY NOT NULL");
   }
-
-
 
   /** Tests {@code ARRAY_REMOVE} function from Spark. */
   @Test void testArrayRemoveFunc() {
@@ -6934,6 +6948,31 @@ public class SqlOperatorTest {
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
     f1.checkScalar("array_insert(array[map[1, 'a']], -1, map[2, 'b'])", "[{2=b}, {1=a}]",
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
+  }
+
+  /** Test case for
+   * <a href="https://github.com/apache/calcite/pull/3705">[CALCITE-5976]
+   * Use explicit casting if inserted element type in ArrayPrepend/ArrayAppend/ArrayInsert
+   * does not equal derived component type)</a>. */
+  @Test void testArrayInsertFuncByCast() {
+    final SqlOperatorFixture f0 = fixture();
+    f0.setFor(SqlLibraryOperators.ARRAY_INSERT);
+    final SqlOperatorFixture f1 = f0.withLibrary(SqlLibrary.SPARK);
+
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as tinyint))",
+        "[1, 2, 4, 3]", "INTEGER NOT NULL ARRAY NOT NULL");
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as double))",
+        "[1.0, 2.0, 4.0, 3.0]", "DOUBLE NOT NULL ARRAY NOT NULL");
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as float))",
+        "[1.0, 2.0, 4.0, 3.0]", "FLOAT NOT NULL ARRAY NOT NULL");
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as bigint))",
+        "[1, 2, 4, 3]", "BIGINT NOT NULL ARRAY NOT NULL");
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(null as bigint))",
+        "[1, 2, null, 3]", "BIGINT ARRAY NOT NULL");
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(null as float))",
+        "[1.0, 2.0, null, 3.0]", "FLOAT ARRAY NOT NULL");
+    f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(null as tinyint))",
+        "[1, 2, null, 3]", "INTEGER ARRAY NOT NULL");
   }
 
   /** Tests {@code ARRAY_INTERSECT} function from Spark. */
