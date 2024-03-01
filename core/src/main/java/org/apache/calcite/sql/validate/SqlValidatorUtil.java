@@ -1327,6 +1327,28 @@ public class SqlValidatorUtil {
     }
   }
 
+  public static void adjustTypeForArrayFunctionConstructor(
+      RelDataType componentType, SqlOperatorBinding opBinding, int index) {
+    if (opBinding instanceof SqlCallBinding) {
+      requireNonNull(componentType, "array component type");
+      adjustTypeForMultisetConstructor(
+              componentType, (SqlCallBinding) opBinding, index);
+    }
+  }
+
+  private static void adjustTypeForMultisetConstructor(
+      RelDataType evenType, SqlCallBinding sqlCallBinding, int index) {
+    SqlCall call = sqlCallBinding.getCall();
+    List<SqlNode> operands = call.getOperandList();
+    RelDataType elementType = evenType;
+    if (index == 0) {
+      call.setOperand(index, arrayToCast(operands.get(index), elementType));
+    } else {
+      call.setOperand(index, castTo(operands.get(index), elementType));
+    }
+
+  }
+
   /**
    * When the map key or value does not equal the map component key type or value type,
    * make explicit casting.
@@ -1375,14 +1397,6 @@ public class SqlValidatorUtil {
         elementType = evenType;
       } else {
         elementType = oddType;
-      }
-      if (call.getOperator().getName().equals("ARRAY_INSERT") && i == 1) {
-        continue;
-      }
-      if (operandTypes.get(i).getSqlTypeName().getName().equals("ARRAY")
-          && !elementType.getSqlTypeName().getName().equals("ARRAY")) {
-        call.setOperand(i, arrayToCast(operands.get(i), elementType));
-        continue;
       }
       if (!operandTypes.get(i).equalsSansFieldNames(elementType)) {
         call.setOperand(i, castTo(operands.get(i), elementType));

@@ -1187,9 +1187,11 @@ public abstract class SqlLibraryOperators {
     if (elementType.isNullable()) {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
-    if (componentType != elementType) {
+    if (!componentType.equalsSansFieldNames(elementType)) {
       SqlValidatorUtil.
-          adjustTypeForArrayConstructor(type, opBinding);
+          adjustTypeForArrayFunctionConstructor(type, opBinding, 0);
+      SqlValidatorUtil.
+          adjustTypeForArrayFunctionConstructor(type, opBinding, 1);
     }
 
     requireNonNull(type, "inferred array element type");
@@ -1278,9 +1280,11 @@ public abstract class SqlLibraryOperators {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
 
-    if (componentType != elementType) {
+    if (!componentType.equalsSansFieldNames(elementType)) {
       SqlValidatorUtil.
-          adjustTypeForArrayConstructor(type, opBinding);
+          adjustTypeForArrayFunctionConstructor(type, opBinding, 0);
+      SqlValidatorUtil.
+          adjustTypeForArrayFunctionConstructor(type, opBinding, 2);
     }
     requireNonNull(type, "inferred array element type");
     return SqlTypeUtil.createArrayType(opBinding.getTypeFactory(), type, arrayType.isNullable());
