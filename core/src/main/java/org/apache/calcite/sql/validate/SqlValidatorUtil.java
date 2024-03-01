@@ -1328,32 +1328,48 @@ public class SqlValidatorUtil {
   }
 
   /**
-   * When the array element does not equal the biggest type, make explicit casting.
+   * Adjusts the types of specified operands in an array operation to match a given target type.
+   * This is particularly useful in the context of SQL operations involving array functions,
+   * where it's necessary to ensure that all operands have consistent types for the operation
+   * to be valid.
    *
-   * @param componentType derived array component type
-   * @param opBinding description of call
-   * @param index index of opBinding
+   * <p>This method operates on the assumption that the operands to be adjusted are part of a
+   * {@link SqlCall}, which is bound within a {@link SqlOperatorBinding}. The operands to be
+   * cast are identified by their indexes within the {@code operands} list of the {@link SqlCall}.
+   * The method performs a dynamic check to determine if an operand is a basic call to an array.
+   * If so, it casts each element within the array to the target type.
+   * Otherwise, it casts the operand itself to the target type.
+   *
+   * <p>Example usage: For an operation like {@code array_append(array(1,2), cast(2 as tinyint))},
+   * if targetType is double, this method would ensure that the elements of the
+   * first array and the second operand are cast to double.
+   *
+   * @param targetType The target {@link RelDataType} to which the operands should be cast.
+   * @param opBinding  The {@link SqlOperatorBinding} context, which provides access to the
+   *                   {@link SqlCall} and its operands.
+   * @param indexes    The indexes of the operands within the {@link SqlCall} that need to be
+   *                   adjusted to the target type.
+   * @throws NullPointerException if {@code targetType} is {@code null}.
    */
-  public static void adjustTypeForArrayFunctionConstructor(
-      RelDataType componentType, SqlOperatorBinding opBinding, int index) {
+  public static void adjustTypeForArrayOperationFunction(
+      RelDataType targetType, SqlOperatorBinding opBinding, int... indexes) {
     if (opBinding instanceof SqlCallBinding) {
-      requireNonNull(componentType, "array component type");
-      adjustTypeForMultisetConstructor(
-              componentType, (SqlCallBinding) opBinding, index);
+      requireNonNull(targetType, "array function target type");
+      SqlCall call = ((SqlCallBinding) opBinding).getCall();
+      List<SqlNode> operands = call.getOperandList();
+      for (int idx : indexes) {
+        SqlNode operand = operands.get(idx);
+        if (operand instanceof SqlBasicCall
+            // not use SqlKind to compare because some other array function forms
+            // such as spark array, the SqlKind is other function.
+            // however, the name is same for those different array forms.
+            && "ARRAY".equals(((SqlBasicCall) operand).getOperator().getName())) {
+          call.setOperand(idx, castArrayElementTo(operand, targetType));
+        } else {
+          call.setOperand(idx, castTo(operand, targetType));
+        }
+      }
     }
-  }
-
-  private static void adjustTypeForMultisetConstructor(
-      RelDataType evenType, SqlCallBinding sqlCallBinding, int index) {
-    SqlCall call = sqlCallBinding.getCall();
-    List<SqlNode> operands = call.getOperandList();
-    RelDataType elementType = evenType;
-    if (index == 0) {
-      call.setOperand(index, arrayToCast(operands.get(index), elementType));
-    } else {
-      call.setOperand(index, castTo(operands.get(index), elementType));
-    }
-
   }
 
   /**
@@ -1429,16 +1445,18 @@ public class SqlValidatorUtil {
   }
 
   /**
-   * Creates a CAST operation that converts the given Array in {@link SqlNode} to the specified {@link RelDataType}.
-   * This method uses the {@link SqlStdOperatorTable#CAST} operator to create a new {@link SqlCall}
-   * node representing a CAST operation. The original 'node' is cast to the desired 'type',
-   * preserving the nullability of the 'type'.
+   * Creates a CAST operation that cast each element of the given {@link SqlNode} to the
+   * specified type. The {@link SqlNode} representing an array and a {@link RelDataType}
+   * representing the target type. This method uses the {@link SqlStdOperatorTable#CAST}
+   * operator to create a new {@link SqlCall} node representing a CAST operation.
+   * Each element of original 'node' is cast to the desired 'type', preserving the
+   * nullability of the 'type'.
    *
-   * @param node the {@link SqlNode} which is to be cast
-   * @param type the target {@link RelDataType} to which 'node' should be cast
+   * @param node the {@link SqlNode} the sqlnode representing an array
+   * @param type the target {@link RelDataType} the target type
    * @return a new {@link SqlNode} representing the CAST operation
    */
-  private static SqlNode arrayToCast(SqlNode node, RelDataType type) {
+  private static SqlNode castArrayElementTo(SqlNode node, RelDataType type) {
     int i = 0;
     for (SqlNode operand : ((SqlBasicCall) node).getOperandList()) {
       SqlNode castedOperand =
