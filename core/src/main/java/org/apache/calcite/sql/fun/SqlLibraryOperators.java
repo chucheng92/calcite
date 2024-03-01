@@ -1187,7 +1187,7 @@ public abstract class SqlLibraryOperators {
     if (elementType.isNullable()) {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
-    if (!componentType.equalsSansFieldNames(elementType)) {
+    if (!componentType.isNullable() && !componentType.equalsSansFieldNames(elementType)) {
       SqlValidatorUtil.
           adjustTypeForArrayFunctionConstructor(type, opBinding, 0);
       SqlValidatorUtil.
@@ -1280,7 +1280,7 @@ public abstract class SqlLibraryOperators {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
 
-    if (!componentType.equalsSansFieldNames(elementType)) {
+    if (!componentType.isNullable() && !componentType.equalsSansFieldNames(elementType)) {
       SqlValidatorUtil.
           adjustTypeForArrayFunctionConstructor(type, opBinding, 0);
       SqlValidatorUtil.

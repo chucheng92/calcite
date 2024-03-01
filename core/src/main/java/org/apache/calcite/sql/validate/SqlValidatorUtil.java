@@ -1327,6 +1327,13 @@ public class SqlValidatorUtil {
     }
   }
 
+  /**
+   * When the array element does not equal the biggest type, make explicit casting.
+   *
+   * @param componentType derived array component type
+   * @param opBinding description of call
+   * @param index index of opBinding
+   */
   public static void adjustTypeForArrayFunctionConstructor(
       RelDataType componentType, SqlOperatorBinding opBinding, int index) {
     if (opBinding instanceof SqlCallBinding) {

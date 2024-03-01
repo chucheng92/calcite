@@ -6341,7 +6341,7 @@ public class SqlOperatorTest {
     f.checkType("array_append(cast(null as integer array), 1)", "INTEGER NOT NULL ARRAY");
     f.checkFails("^array_append(array[1, 2], true)^",
         "INTEGER is not comparable to BOOLEAN", false);
-
+    // cast biggest type
     f.checkScalar("array_append(array(1), cast(2 as tinyint))", "[1, 2]",
         "INTEGER NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_append(array(cast(1 as double)), cast(2 as float))", "[1.0, 2.0]",
@@ -6617,7 +6617,7 @@ public class SqlOperatorTest {
     f.checkType("array_prepend(cast(null as integer array), 1)", "INTEGER NOT NULL ARRAY");
     f.checkFails("^array_prepend(array[1, 2], true)^",
         "INTEGER is not comparable to BOOLEAN", false);
-
+    // cast biggest type
     f.checkScalar("array_prepend(array(1), cast(3 as float))", "[3.0, 1.0]",
         "FLOAT NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array(1), cast(3 as bigint))", "[3, 1]",
@@ -6922,7 +6922,7 @@ public class SqlOperatorTest {
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
     f1.checkScalar("array_insert(array[map[1, 'a']], -1, map[2, 'b'])", "[{2=b}, {1=a}]",
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
-
+    // cast biggest type
     f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as tinyint))",
         "[1, 2, 4, 3]", "INTEGER NOT NULL ARRAY NOT NULL");
     f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as double))",
