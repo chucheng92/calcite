@@ -6341,20 +6341,7 @@ public class SqlOperatorTest {
     f.checkType("array_append(cast(null as integer array), 1)", "INTEGER NOT NULL ARRAY");
     f.checkFails("^array_append(array[1, 2], true)^",
         "INTEGER is not comparable to BOOLEAN", false);
-  }
 
-  /** Test case for
-   * <a href="https://github.com/apache/calcite/pull/3705">[CALCITE-5976]
-   * Use explicit casting if inserted element type in ArrayPrepend/ArrayAppend/ArrayInsert
-   * does not equal derived component type)</a>. */
-  @Test void testArrayAppendFuncByCast() {
-    final SqlOperatorFixture f0 = fixture();
-    f0.setFor(SqlLibraryOperators.ARRAY_APPEND);
-    f0.checkFails("^array_append(array[1], 2)^",
-        "No match found for function signature ARRAY_APPEND\\("
-            + "<INTEGER ARRAY>, <NUMERIC>\\)", false);
-
-    final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.SPARK);
     f.checkScalar("array_append(array(1), cast(2 as tinyint))", "[1, 2]",
         "INTEGER NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_append(array(cast(1 as double)), cast(2 as float))", "[1.0, 2.0]",
@@ -6630,20 +6617,7 @@ public class SqlOperatorTest {
     f.checkType("array_prepend(cast(null as integer array), 1)", "INTEGER NOT NULL ARRAY");
     f.checkFails("^array_prepend(array[1, 2], true)^",
         "INTEGER is not comparable to BOOLEAN", false);
-  }
 
-  /** Test case for
-   * <a href="https://github.com/apache/calcite/pull/3705">[CALCITE-5976]
-   * Use explicit casting if inserted element type in ArrayPrepend/ArrayAppend/ArrayInsert
-   * does not equal derived component type)</a>. */
-  @Test void testArrayPrependFuncByCast() {
-    final SqlOperatorFixture f0 = fixture();
-    f0.setFor(SqlLibraryOperators.ARRAY_PREPEND);
-    f0.checkFails("^array_prepend(array[1], 2)^",
-        "No match found for function signature ARRAY_PREPEND\\("
-            + "<INTEGER ARRAY>, <NUMERIC>\\)", false);
-
-    final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.SPARK);
     f.checkScalar("array_prepend(array(1), cast(3 as float))", "[3.0, 1.0]",
         "FLOAT NOT NULL ARRAY NOT NULL");
     f.checkScalar("array_prepend(array(1), cast(3 as bigint))", "[3, 1]",
@@ -6948,16 +6922,6 @@ public class SqlOperatorTest {
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
     f1.checkScalar("array_insert(array[map[1, 'a']], -1, map[2, 'b'])", "[{2=b}, {1=a}]",
         "(INTEGER NOT NULL, CHAR(1) NOT NULL) MAP NOT NULL ARRAY NOT NULL");
-  }
-
-  /** Test case for
-   * <a href="https://github.com/apache/calcite/pull/3705">[CALCITE-5976]
-   * Use explicit casting if inserted element type in ArrayPrepend/ArrayAppend/ArrayInsert
-   * does not equal derived component type)</a>. */
-  @Test void testArrayInsertFuncByCast() {
-    final SqlOperatorFixture f0 = fixture();
-    f0.setFor(SqlLibraryOperators.ARRAY_INSERT);
-    final SqlOperatorFixture f1 = f0.withLibrary(SqlLibrary.SPARK);
 
     f1.checkScalar("array_insert(array(1, 2, 3), 3, cast(4 as tinyint))",
         "[1, 2, 4, 3]", "INTEGER NOT NULL ARRAY NOT NULL");
